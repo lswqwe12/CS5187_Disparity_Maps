@@ -1,0 +1,2 @@
+PSNR raw: 8.65 dB
+PSNR refined: 6.88 dB
