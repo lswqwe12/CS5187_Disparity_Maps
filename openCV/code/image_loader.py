@@ -52,13 +52,13 @@ class ImageLoader:
         if missing:
             raise FileNotFoundError(f"Missing expected files: {missing}")
 
-        # left_img = cv2.imread(left_path, cv2.IMREAD_UNCHANGED)
-        # right_img = cv2.imread(right_path, cv2.IMREAD_UNCHANGED)
-        # disp_img = cv2.imread(disp_path, cv2.IMREAD_UNCHANGED)
+        left_img = cv2.imread(left_path, cv2.IMREAD_UNCHANGED)
+        right_img = cv2.imread(right_path, cv2.IMREAD_UNCHANGED)
+        disp_img = cv2.imread(disp_path, cv2.IMREAD_UNCHANGED)
         
-        left_img = cv2.imread(left_path, 0)
-        right_img = cv2.imread(right_path, 0)
-        disp_img = cv2.imread(disp_path, 0)
+        # left_img = cv2.imread(left_path, 0)
+        # right_img = cv2.imread(right_path, 0)
+        # disp_img = cv2.imread(disp_path, 0)
         
 
         return left_img, right_img, disp_img
