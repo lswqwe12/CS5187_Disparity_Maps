@@ -1,1 +1,0 @@
-group1 PSNR: 7.92 dB
