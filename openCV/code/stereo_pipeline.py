@@ -67,6 +67,8 @@ from config import (
     ENABLE_FINAL_MEDIAN,
     FINAL_MEDIAN_KERNEL,
     INVALID_DISPARITY_VALUE,
+    PSNR_ALIGN_TO_GT,
+    PSNR_ALIGN_PERC,
 )
 
 
@@ -201,11 +203,15 @@ def hole_fill(disp, valid_mask):
     h, w = disp.shape
     for y in range(h):
         for x in range(w):
-            if valid_dilated[y, x] == 0:
+            # Fill pixels that were invalid in the original mask (source of holes)
+            if valid_mask[y, x] == 0:
                 y0, y1 = max(0, y - half), min(h, y + half + 1)
                 x0, x1 = max(0, x - half), min(w, x + half + 1)
                 neigh = disp[y0:y1, x0:x1]
+                # Prefer original valid pixels; if none exist, allow dilated as donors
                 neigh_mask = valid_mask[y0:y1, x0:x1]
+                if not np.any(neigh_mask):
+                    neigh_mask = valid_dilated[y0:y1, x0:x1]
                 vals = neigh[neigh_mask == 1]
                 if vals.size > 0:
                     if FILL_STRATEGY == "mean":
@@ -232,10 +238,8 @@ def smooth_disparity(disp, guide):
             pass
     # Bilateral filter (edge-preserving)
     if USE_BILATERAL_FILTER:
-        disp_u8 = cv2.normalize(out, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        disp_u8 = cv2.bilateralFilter(disp_u8, BILATERAL_D, BILATERAL_SIGMA_COLOR, BILATERAL_SIGMA_SPACE)
-        # map back to float scale
-        out = disp_u8.astype(np.float32)
+        # Apply bilateral directly on float map to avoid rescaling artifacts
+        out = cv2.bilateralFilter(out.astype(np.float32), BILATERAL_D, BILATERAL_SIGMA_COLOR, BILATERAL_SIGMA_SPACE)
     return out
 
 
@@ -280,6 +284,30 @@ def compute_psnr_with_mask(gt, pred):
     return psnr
 
 
+def scale_pred_to_gt_u8(pred_float, gt_u8):
+    """Scale predicted float disparity to GT 0..255 space for fair PSNR.
+
+    Uses robust percentile-based scaling to limit outliers' influence.
+    """
+    if not PSNR_ALIGN_TO_GT:
+        # fallback to simple visualization normalization
+        return normalize_to_uint8(pred_float)
+    eps = 1e-6
+    # robust max from percentiles
+    gt_valid = gt_u8[gt_u8 != INVALID_DISPARITY_VALUE].astype(np.float32)
+    if gt_valid.size == 0:
+        return normalize_to_uint8(pred_float)
+    gt_p = np.percentile(gt_valid, PSNR_ALIGN_PERC)
+    pred_valid = pred_float[pred_float > eps].astype(np.float32)
+    if pred_valid.size == 0:
+        return normalize_to_uint8(pred_float)
+    pred_p = float(np.percentile(pred_valid, PSNR_ALIGN_PERC))
+    scale = gt_p / max(pred_p, eps)
+    pred_scaled = pred_float * scale
+    pred_scaled_u8 = np.clip(pred_scaled, 0, 255).astype(np.uint8)
+    return pred_scaled_u8
+
+
 def main():
     ensure_results_dir()
     loader = ImageLoader()
@@ -308,8 +336,8 @@ def main():
     # Step 5: SGBM
     disp_l, disp_r = compute_sgbm(left_p, right_p)
 
-    # Raw visualization
-    disp_raw_vis = normalize_to_uint8(disp_l)
+    # Raw visualization aligned to GT scale for fair PSNR
+    disp_raw_vis = scale_pred_to_gt_u8(disp_l, gt_g)
     cv2.imwrite("results/disp_pred_raw.png", disp_raw_vis)
 
     # Step 6: LR consistency
@@ -324,8 +352,8 @@ def main():
     # Step 9: final median denoise
     disp_final = final_median(disp_smooth)
 
-    # Save refined
-    disp_ref_vis = normalize_to_uint8(disp_final)
+    # Save refined (aligned to GT scale)
+    disp_ref_vis = scale_pred_to_gt_u8(disp_final, gt_g)
     cv2.imwrite("results/disp_pred_refined.png", disp_ref_vis)
 
     # Step 10: PSNR
