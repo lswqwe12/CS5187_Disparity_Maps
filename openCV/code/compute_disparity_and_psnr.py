@@ -19,7 +19,7 @@ import cv2
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio
 
-from image_loader import ImageLoader
+from utils.image_loader import ImageLoader
 
 
 def ensure_results_dir():

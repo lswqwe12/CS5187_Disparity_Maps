@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio
 import matplotlib.pyplot as plt
-from image_loader import ImageLoader
+from utils.image_loader import ImageLoader
 
 # ===================== 第一步：SIFT特征提取+BFMatcher匹配 =====================
 def sift_bf_matching(img_left, img_right, ratio_thresh=0.75):

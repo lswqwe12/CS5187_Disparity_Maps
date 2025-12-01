@@ -1,4 +1,4 @@
-from image_loader import ImageLoader
+from utils.image_loader import ImageLoader
 import cv2
 import numpy as np
 import math
