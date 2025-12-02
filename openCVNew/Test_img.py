@@ -7,14 +7,16 @@ import torch.nn.functional as F
 import numpy as np
 import time
 import math
+import numpy as np
 import cv2
+import os
 from PIL import Image
 
-parser = argparse.ArgumentParser(description='SGBM')
-parser.add_argument('--leftimg', default= './StereoMatchingTestings/Art/view1.png',
-                    help='load model')
-parser.add_argument('--rightimg', default= './StereoMatchingTestings/Art/view5.png',
-                    help='load model')                                      
+RESULT_PATH = './openCVNew/results'
+ORIGIN_PATH = './StereoMatchingTestings/'
+RESULT_PREFIX = 'pred_disparity_'
+
+parser = argparse.ArgumentParser(description='SGBM')                                 
 parser.add_argument('--maxdisp', type=int, default=192,
                     help='maxium disparity')
 parser.add_argument('--device', choices=['auto', 'cpu', 'cuda', 'mps'], default='auto',
@@ -46,13 +48,6 @@ def resolve_device(pref: str) -> torch.device:
 
 
 def compute_SGBM(imgL, imgR):
-    """Use OpenCV SGBM to generate disparity for the left image.
-
-    Note: imgL/imgR are already preprocessed (ToTensor + Normalize + pad) in main.
-    We only convert back to uint8 images for OpenCV and run SGBM, without extra
-    preprocessing (no filtering/CLAHE/etc.).
-    Returns HxW float32 disparity in original padded size.
-    """
     # Remove batch dimension [1,3,H,W] -> [3,H,W]
     if imgL.dim() == 4:
         imgL = imgL[0]
@@ -129,20 +124,59 @@ def post_process_disparity(pred_disp, top_pad, right_pad, parent_dir):
         img = pred_disp
     img = (img*256).astype('uint16')
     img = Image.fromarray(img)
-    img.save(f'pred_disparity_{parent_dir}.png')
+    img.save(f'{RESULT_PATH}/pred_disparity_{parent_dir}.png')
+    
+
+def psnr(img1, img2):
+    mse = np.mean( ((img1 - img2)) ** 2 )
+    if mse == 0:
+        return 'INF'
+    PIXEL_MAX = 255.0
+    return 20 * math.log10(PIXEL_MAX / math.sqrt(mse))
+
+
+def calculate_psnr(parent_dir):
+        gt_names = f"{ORIGIN_PATH}/{parent_dir}/disp1.png"
+        gt_img = np.array(Image.open(gt_names),dtype=float)
+        
+        pred_names =  f"{RESULT_PATH}/{RESULT_PREFIX}{parent_dir}.png"
+        pred_img = np.array(Image.open(pred_names),dtype=float)
+        
+        # When calculate the PSNR:
+        # 1.) The pixels in ground-truth disparity map with '0' value will be neglected.
+        # 2.) The left part region (1-250 columns) of view1 is not included as there is no
+        #   corresponding pixels in the view5.
+    
+        [h,l] = gt_img.shape
+        gt_img = gt_img[:, 250:l]
+        pred_img = pred_img[:, 250:l]
+        pred_img[gt_img==0]= 0
+    
+        peaksnr = psnr(pred_img, gt_img)
+        print(f'The Peak-SNR value of {parent_dir} is %0.4f \n', peaksnr)
 
 
 def main():
-    test_dirs = ["Art", "Dolls", "Reindeer"] 
+    test_dirs = ["Art", "Dolls", "Reindeer"]
+    os.makedirs(RESULT_PATH, exist_ok=True)
 
-    imgL, imgR, top_pad, right_pad = pre_process_disparity(args.leftimg, args.rightimg)
+    
+    for index in range(3):
+        args.leftimg = f'./StereoMatchingTestings/{test_dirs[index]}/view1.png'
+        args.rightimg = f'./StereoMatchingTestings/{test_dirs[index]}/view5.png'
+        
 
-    start_time = time.time()
-    pred_disp = compute_SGBM(imgL,imgR)
-    print('time = %.2f' %(time.time() - start_time))
+        imgL, imgR, top_pad, right_pad = pre_process_disparity(args.leftimg, args.rightimg)
 
-    parent_dir = args.leftimg.split('/')[-2]
-    post_process_disparity(pred_disp, top_pad, right_pad, parent_dir)
+        start_time = time.time()
+        print(f'Processing {test_dirs[index]} disparity ...')
+        pred_disp = compute_SGBM(imgL,imgR)
+        print('time = %.2f' %(time.time() - start_time))
+
+        parent_dir = test_dirs[index]
+        post_process_disparity(pred_disp, top_pad, right_pad, parent_dir)
+        
+        calculate_psnr(parent_dir)
 
 if __name__ == '__main__':
    main()
