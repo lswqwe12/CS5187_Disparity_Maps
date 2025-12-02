@@ -6,7 +6,7 @@ from PIL import Image
 
 loader = ImageLoader()
 left_image, right_image, disparity_map = loader.load_from('StereoMatchingTestings/Art')
-opt_img = cv2.imread('results/disp_map_optimized.png', 0)
+opt_img = cv2.imread('/Test_disparity.png', 0)
 
 def calculate_psnr(img1, img2):
     # img1 and img2 have range [0, 255]
@@ -18,12 +18,12 @@ def calculate_psnr(img1, img2):
     return 20 * math.log10(255.0 / math.sqrt(mse))
 
 def test():
-    gt_name = "./StereoMatchingTestings/Art/disp1.png";
-    gt_img = np.array(Image.open(gt_name),dtype=float);
+    gt_name = "./StereoMatchingTestings/Art/disp1.png"
+    gt_img = np.array(Image.open(gt_name),dtype=float)
     
     
-    pred_name = "./results/disp_map_optimized.png";
-    pred_img = np.array(Image.open(pred_name),dtype=float);
+    pred_name = "./Test_disparity.png"
+    pred_img = np.array(Image.open(pred_name),dtype=float)
         
     # When calculate the PSNR:
     # 1.) The pixels in ground-truth disparity map with '0' value will be neglected.

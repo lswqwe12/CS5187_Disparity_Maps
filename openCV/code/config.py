@@ -21,7 +21,7 @@ GAUSSIAN_SIGMA = 0.0              # Gaussian sigma
 MEDIAN_KERNEL = 3                 # Median filter kernel size (odd)
 
 # Contrast enhancement (CLAHE).
-ENABLE_CLAHE = True               # Enhance local contrast to improve matching
+ENABLE_CLAHE = False               # Enhance local contrast to improve matching
 CLAHE_CLIP_LIMIT = 2.0            # Contrast clip limit
 CLAHE_TILE_GRID = (8, 8)          # Tile grid size
 
