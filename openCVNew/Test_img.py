@@ -15,6 +15,7 @@ from PIL import Image
 RESULT_PATH = './openCVNew/results'
 ORIGIN_PATH = './StereoMatchingTestings/'
 RESULT_PREFIX = 'pred_disparity_'
+PSNR_RESULT_FILENAME = 'PSNR_results.txt'
 
 parser = argparse.ArgumentParser(description='SGBM')                                 
 parser.add_argument('--maxdisp', type=int, default=192,
@@ -154,12 +155,13 @@ def calculate_psnr(parent_dir):
     
         peaksnr = psnr(pred_img, gt_img)
         print(f'The Peak-SNR value of {parent_dir} is %0.4f \n', peaksnr)
+        return peaksnr
 
 
 def main():
     test_dirs = ["Art", "Dolls", "Reindeer"]
     os.makedirs(RESULT_PATH, exist_ok=True)
-
+    full_psnr_path = os.path.join(RESULT_PATH, PSNR_RESULT_FILENAME)
     
     for index in range(3):
         leftimg_path = f'./StereoMatchingTestings/{test_dirs[index]}/view1.png'
@@ -169,12 +171,16 @@ def main():
         start_time = time.time()
         print(f'Processing {test_dirs[index]} disparity ...')
         pred_disp = compute_SGBM(imgL,imgR)
-        print('time = %.2f' %(time.time() - start_time))
+        running_time = time.time() - start_time
+        print('time = %.2f' % running_time)
 
         parent_dir = test_dirs[index]
         post_process_disparity(pred_disp, top_pad, right_pad, parent_dir)
         
-        calculate_psnr(parent_dir)
+        psnr_value =calculate_psnr(parent_dir)
+        with open(full_psnr_path, 'a', encoding='utf-8') as f:
+            f.write(f'The Peak-SNR value of {parent_dir}: {psnr_value}. Running time: {running_time}\n')
+
 
 if __name__ == '__main__':
    main()
