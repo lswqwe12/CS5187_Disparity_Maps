@@ -162,12 +162,10 @@ def main():
 
     
     for index in range(3):
-        args.leftimg = f'./StereoMatchingTestings/{test_dirs[index]}/view1.png'
-        args.rightimg = f'./StereoMatchingTestings/{test_dirs[index]}/view5.png'
-        
+        leftimg_path = f'./StereoMatchingTestings/{test_dirs[index]}/view1.png'
+        rightimg_path = f'./StereoMatchingTestings/{test_dirs[index]}/view5.png'
 
-        imgL, imgR, top_pad, right_pad = pre_process_disparity(args.leftimg, args.rightimg)
-
+        imgL, imgR, top_pad, right_pad = pre_process_disparity(leftimg_path, rightimg_path)
         start_time = time.time()
         print(f'Processing {test_dirs[index]} disparity ...')
         pred_disp = compute_SGBM(imgL,imgR)

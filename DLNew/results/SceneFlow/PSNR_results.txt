@@ -1,0 +1,3 @@
+The Peak-SNR value of Art: -42.69287509929377. Running time: 153.42313027381897
+The Peak-SNR value of Dolls: -43.01140118594599. Running time: 154.43907594680786
+The Peak-SNR value of Reindeer: -42.45250232661279. Running time: 175.49783182144165
