@@ -35,7 +35,7 @@ def test():
     pred_img[gt_img==0]= 0
 
     peaksnr = calculate_psnr(pred_img, gt_img)
-    print('The Peak-SNR value is %0.4f \n', peaksnr)
+    print('The Peak-SNR value isss %0.4f \n', peaksnr)
 
 if __name__== '__main__':
     test()   

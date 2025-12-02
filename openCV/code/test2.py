@@ -14,7 +14,7 @@ def test():
     gt_img = numpy.array(Image.open(gt_names),dtype=float)
     
     
-    pred_names =  "./Test_disparity.png"
+    pred_names =  "./Test_disparity_2.png"
     pred_img = numpy.array(Image.open(pred_names),dtype=float)
     
     # When calculate the PSNR:
